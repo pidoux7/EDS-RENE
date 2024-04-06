@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.10"
 numpy = "^1.26.4"
 edsnlp = {extras = ["ml"], version = "^0.11.1"}
+matplotlib = "^3.8.4"
 
 
 [build-system]
