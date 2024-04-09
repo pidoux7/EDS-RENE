@@ -149,7 +149,7 @@ def train(
     max_steps: int = 1000,
     seed: int = 42,
     lr: float = 3e-4,
-    batch_size: int = 8,
+    batch_size: int = 4,
 ):
     # Adapting a dataset
     train_docs = list(train_adapter(nlp))
@@ -181,7 +181,7 @@ def train(
 
     iterator = chain.from_iterable(repeat(dataloader))
 
-    # Looping through the training
+    # Looping through the training data
     best_score = 0
     for step in tqdm(range(max_steps), "Training model", leave=True):
         batch = next(iterator)
@@ -222,31 +222,20 @@ def test(
     # Adapting a dataset
     test_docs = list(test_adapter(nlp))
 
-    # Complete the initialization with the training data
-    nlp.post_init(test_docs)
-
-    # Preprocessing the data
-    preprocessed = list(
-        nlp.preprocess_many(
-            test_docs,
-            supervision=False,
-        )
-    )
-    dataloader = torch.utils.data.DataLoader(
-        preprocessed,
-        batch_size=batch_size,
-        collate_fn=nlp.collate,
-        shuffle=True,
-    )
-
-    iterator = chain.from_iterable(repeat(dataloader))
+    scorer = create_ner_exact_scorer(nlp.get_pipe("ner").target_span_getter)
 
     # Looping through the training
-    for batch in iterator:
-        with nlp.cache():
-            for name, component in nlp.torch_components():
-                output = component.module_forward(batch[name])
-                print(output)
+    with nlp.select_pipes(enable=["ner"]):  #
+        pred = nlp.pipe(deepcopy(test_docs))
+        score = scorer(test_docs, pred)
+        print(score["Temporal"])
+        res = list(pred)
+        cpt = 0
+        for ent in res[0].ents:
+            if ent.label_ == "Temporal":
+                print(ent.text, ent.label_)
+                cpt += 1
+        print(cpt)
 
 
 if __name__ == "__main__":
