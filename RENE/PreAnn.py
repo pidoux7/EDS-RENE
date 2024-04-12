@@ -64,10 +64,19 @@ def prepare_brat(pred_docs: List, files_name: List[str], predicted_rep: str):
         predicted_rep (str): repertory where the brat files will be created
     """
     brat = BratConnector(predicted_rep)
-    for i, doc in enumerate(pred_docs):
-        doc._.note_id = files_name[i]
-        doc.spans["pollutions"] = []
-    brat.docs2brat(pred_docs)
+
+    doc_iterator = edsnlp.data.read_standoff(original_rep)
+    nlp = edsnlp.blank("eds")
+    pred_iterator = doc_iterator.map_pipeline(nlp)
+    pred_date = list(pred_iterator)
+    pred_docs = list(pred_docs)
+    for i, (pred_doc, cop_doc) in enumerate(zip(pred_docs, pred_date)):
+        cop_doc._.note_id = files_name[i]
+        cop_doc.ents = [ent for ent in pred_doc.ents if ent.label_ == "Temporal"]
+        cop_doc.spans = {"Temporal": cop_doc.ents}
+        print(cop_doc.ents)
+        pred_date[i] = cop_doc
+    brat.docs2brat(pred_date)
 
 
 def fusion_ann(
@@ -228,14 +237,8 @@ def test(
     with nlp.select_pipes(enable=["ner"]):  #
         pred = nlp.pipe(deepcopy(test_docs))
         score = scorer(test_docs, pred)
-        print(score["Temporal"])
-        res = list(pred)
-        cpt = 0
-        for ent in res[0].ents:
-            if ent.label_ == "Temporal":
-                print(ent.text, ent.label_)
-                cpt += 1
-        print(cpt)
+
+    return pred, score
 
 
 if __name__ == "__main__":
@@ -281,12 +284,12 @@ if __name__ == "__main__":
         batch_size=3,
     )
 
-    pred_docs = test(
+    pred_docs, score = test(
         nlp=nlp,
         test_adapter=ner_adapter("/home/pidoux/LIMICS/brat/data/RENE/"),
         batch_size=3,
     )
 
-    # prepare_brat(pred_docs, files_name, predicted_rep)
+    prepare_brat(pred_docs, files_name, predicted_rep)
 
     # fusion_ann(original_rep, predicted_rep, merged_rep, files_name)
