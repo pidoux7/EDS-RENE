@@ -193,5 +193,26 @@ print(f'Total number of entities: {total}')
 ```
 
 ```python
+total = 0
+for ent in entities:
+    doc_iterator = edsnlp.data.read_standoff(
+        original_rep,
+        span_setter={"ents": ent},
+    )
+
+    true_docs = list(doc_iterator)
+
+    nb_med_doc = []
+    for doc in true_docs:
+        nb_med_doc.append(len(doc.ents))
+    print(ent)
+    print(f'Number of {ent} entities per document: {nb_med_doc}')
+    print(f'Total number of {ent} entities per document: {sum(nb_med_doc)}')
+    print(f'Mean number of {ent} entities per document: {sum(nb_med_doc)/len(nb_med_doc)}\n')
+    total += sum(nb_med_doc)
+print(f'Total number of entities: {total}')
+```
+
+```python
 
 ```
