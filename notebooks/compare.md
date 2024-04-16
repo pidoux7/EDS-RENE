@@ -14,9 +14,14 @@ jupyter:
 ---
 
 ```python
-%reload_ext jupyter_black
+import sys
 
+sys.path.insert(0, "/home/pidoux/LIMICS/edsnlp")
 import edsnlp
+
+%reload_ext jupyter_black
+%load_ext autoreload
+%autoreload 2
 from spacy.tokens import Doc, Span
 from spacy import Language
 from typing import List, Tuple, Dict, Any, Union, Generator
@@ -86,8 +91,16 @@ def is_match(ent_0: Span, ent_1: Span, matching_mode: str = "exact") -> bool:
 ```
 
 ```python
-def evaluate(corpus_0: List[Doc], corpus_1: List[Doc]) -> Tuple[dict,dict]:
+def evaluate(corpus_0: List[Doc], corpus_1: List[Doc]) -> Tuple[dict, dict]:
+    """Evaluation of NER annotations between two annotated corpora
 
+    Args:
+        corpus_0 (List[Doc]): corpus annotated by the first annotator
+        corpus_1 (List[Doc]): corpus annotated by the second annotator
+
+    Returns:
+        Tuple[dict,dict]: Evaluation scores
+    """
 
     scores_0 = {
         "exact": 0,
@@ -218,7 +231,15 @@ def eval(
 
 ```python
 def extract(span: Span, num_doc: int) -> Tuple:
+    """extract information from a span
 
+    Args:
+        span (Span): span to extract information from
+        num_doc (int): document number
+
+    Returns:
+        Tuple: Tuple containing the extracted information
+    """
     return (
         num_doc,
         span.start_char,
@@ -238,7 +259,51 @@ def extract(span: Span, num_doc: int) -> Tuple:
 ```
 
 ```python
+def scoring(
+    spans_0: List[Span], spans_1: List[Span], num_doc: int
+) -> Tuple[List[Tuple], List[str]]:
+    """scoring function to evaluate the match of NER and their attributes
+
+    Args:
+        spans_0 (List[Span]): spans from the first annotator
+        spans_1 (List[Span]): spans from the second annotator
+        num_doc (int): number of the document
+
+    Returns:
+        Tuple[List[Tuple], List[str]]: list of tuples with the attributes of the spans
+    """
+    scores = {"true": 0, "false": 0, "total": 0}
+    error = []
+    for key_0, value_0 in spans_0.items():
+        for i in value_0:
+            scores["total"] += 1
+            ent_0 = extract(i, num_doc)
+            matched = False
+            for key_1, value_1 in spans_1.items():
+                for j in value_1:
+                    ent_1 = extract(j, num_doc)
+                    if ent_0 == ent_1:
+                        matched = True
+                        scores["true"] += 1
+                        continue
+            if matched == False:
+                scores["false"] += 1
+                error.append(ent_0)
+
+    return scores, error
+```
+
+```python
 def perfect_match(corpus_0: List[Doc], corpus_1: List[Doc]) -> Tuple:
+    """Evaluation of NER and their attributes annotations between two annotated corpora
+
+    Args:
+        corpus_0 (List[Doc]): annotated corpus by the first annotator
+        corpus_1 (List[Doc]): annotated corpus by the second annotator
+
+    Returns:
+        Tuple: Evaluation scores and list of errors
+    """
     scores_total = {"true": 0, "false": 0, "total": 0}
     scores_liste = []
     error = []
@@ -268,30 +333,17 @@ def perfect_match(corpus_0: List[Doc], corpus_1: List[Doc]) -> Tuple:
 ```
 
 ```python
-def scoring(spans_0: List[Span], spans_1: List[Span], num_doc: int) -> List[Tuple]:
-    scores = {"true": 0, "false": 0, "total": 0}
-    error = []
-    for key_0, value_0 in spans_0.items():
-        for i in value_0:
-            scores["total"] += 1
-            ent_0 = extract(i, num_doc)
-            matched = False
-            for key_1, value_1 in spans_1.items():
-                for j in value_1:
-                    ent_1 = extract(j, num_doc)
-                    if ent_0 == ent_1:
-                        matched = True
-                        scores["true"] += 1
-                        continue
-            if matched == False:
-                scores["false"] += 1
-                error.append(ent_0)
-
-    return scores, error
-```
-
-```python
 def perfect_match(corpus_0: List[Doc], corpus_1: List[Doc]) -> Tuple:
+    """Evaluation of NER and their attributes annotations between two annotated corpora
+
+
+    Args:
+        corpus_0 (List[Doc]): annotated corpus by the first annotator
+        corpus_1 (List[Doc]): annotated corpus by the second annotator
+
+    Returns:
+        Tuple: Evaluation scores and list of errors
+    """
     scores_total = {"true_0": 0, "false_0": 0, "true_1": 0, "false_1": 0, "total": 0}
     scores_liste, error_0, error_1 = [], [], []
 
@@ -322,13 +374,45 @@ def perfect_match(corpus_0: List[Doc], corpus_1: List[Doc]) -> Tuple:
 ```
 
 ```python
+def view_df(error_liste: List[str]) -> pd.DataFrame:
+    """visualize the errors in a DataFrame
+
+    Args:
+        error_liste (List[str]): List of errors
+
+    Returns:
+        pd.DataFrame: DataFrame of errors
+    """
+    return pd.DataFrame(
+        error_liste,
+        columns=[
+            "Num_doc",
+            "start",
+            "end",
+            "text",
+            "label",
+            "Tech",
+            "Negation",
+            "Certainty",
+            "Temporality",
+            "Family",
+            "AttDate",
+            "AttTemp",
+            "Action",
+            "RefTemp",
+        ],
+    )
+```
+
+```python
 corpus = ouvrir_corpus([dossier_0, dossier_1])
 corpus_0 = corpus[0]
 corpus_1 = corpus[1]
 
-scores_0, scores_1 = evaluate(corpus_0, corpus_1)
+NER_scores_0, NER_scores_1 = evaluate(corpus_0, corpus_1)
 
-scores_0 = eval(corpus_0, corpus_1, matching_mode="exact")
+F_scores_0 = eval(corpus_0, corpus_1, matching_mode="exact")
+F_scores_1 = eval(corpus_1, corpus_0, matching_mode="exact")
 
 scores_liste, error_0, error_1 = perfect_match(corpus_0, corpus_1)
 ```
@@ -341,47 +425,28 @@ df_scores
 ```
 
 ```python
-df_error_0 = pd.DataFrame(
-    error_0,
-    columns=[
-        "Num_doc",
-        "start",
-        "end",
-        "text",
-        "label",
-        "Tech",
-        "Negation",
-        "Certainty",
-        "Temporality",
-        "Family",
-        "AttDate",
-        "AttTemp",
-        "Action",
-        "RefTemp",
-    ],
-)
-df_error_0
+view_df(error_0)
 ```
 
 ```python
-df_error_1 = pd.DataFrame(
-    error_1,
-    columns=[
-        "Num_doc",
-        "start",
-        "end",
-        "text",
-        "label",
-        "Tech",
-        "Negation",
-        "Certainty",
-        "Temporality",
-        "Family",
-        "AttDate",
-        "AttTemp",
-        "Action",
-        "RefTemp",
-    ],
-)
-df_error_1
+view_df(error_1)
+```
+
+NER
+label/ok/ pas ok 1, pas ok 2, ratio / total
+sum()
+
+qualif
+attributes
+
+```python
+for i, doc in enumerate(corpus_0):
+    for key, value in doc.spans.items():
+        for j in value:
+            print(j.text, j.start_char, j.end_char, j.label_, j._.rel)
+    break
+```
+
+```python
+
 ```
