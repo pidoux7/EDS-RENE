@@ -13,6 +13,8 @@ jupyter:
     name: python3
 ---
 
+# Evaluation inter-annotateurs
+
 ```python
 import sys
 
@@ -43,7 +45,7 @@ corpus_0 = corpus[0]
 corpus_1 = corpus[1]
 ```
 
-# Evaluation entité seule
+# Evaluation Entitiés
 
 ```python
 NER_scores = evaluate_ner(corpus_0, corpus_1)
@@ -60,7 +62,7 @@ df_exact
 df_partial
 ```
 
-# Evaluer entité et attributs
+# Evaluation Attributs
 
 ```python
 scores_liste, error_0, error_1,accord = perfect_match_ner(corpus_0, corpus_1)
@@ -86,6 +88,8 @@ view_df_ner(error_0)
 ```python
 view_df_ner(error_1)
 ```
+
+# Evaluation Relations
 
 ```python
 scores_liste_rel, error_0_rel, error_1_rel = perfect_match_rel(corpus_0, corpus_1)

@@ -161,10 +161,6 @@ df = pred_docs.to_pandas(
 ```
 
 ```python
-
-```
-
-```python
 from edsnlp.viz import QuickExample
 nlp = edsnlp.blank("eds")
 nlp.add_pipe(eds.sentences())
@@ -189,8 +185,4 @@ import os
 cwd = os.getcwd
 data_path = os.path.join(cwd, 'data', 'data.csv')
 print(data_path)
-```
-
-```python
-
 ```
