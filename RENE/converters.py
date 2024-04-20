@@ -608,9 +608,11 @@ class OmopDoc2DictConverter:
         spans = get_spans(doc, self.span_getter)
         span_binding_getters = {
             obj_name: BINDING_GETTERS[
-                ("_." + ext_name)
-                if ext_name.split(".")[0] not in SPAN_BUILTIN_ATTRS
-                else ext_name
+                (
+                    ("_." + ext_name)
+                    if ext_name.split(".")[0] not in SPAN_BUILTIN_ATTRS
+                    else ext_name
+                )
             ]
             for ext_name, obj_name in self.span_attributes.items()
         }
@@ -671,9 +673,11 @@ class EntsDoc2DictConverter:
     def __call__(self, doc):
         span_binding_getters = {
             obj_name: BINDING_GETTERS[
-                ("_." + ext_name)
-                if ext_name.split(".")[0] not in SPAN_BUILTIN_ATTRS
-                else ext_name
+                (
+                    ("_." + ext_name)
+                    if ext_name.split(".")[0] not in SPAN_BUILTIN_ATTRS
+                    else ext_name
+                )
             ]
             for ext_name, obj_name in self.span_attributes.items()
         }

@@ -56,11 +56,3 @@ print(rel)
 entity_id
 
 [{'nature': 'depend', 'span': grippe}, ..]
-
-```python
-
-```
-
-```python
-
-```
