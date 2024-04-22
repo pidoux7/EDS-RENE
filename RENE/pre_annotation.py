@@ -97,36 +97,29 @@ def fusion_ann(
         merged_rep (str): destination directory of the merged annotations
         files_name (List[str]): list of file names to merge
     """
-    # Iterate over the files
     for file_name in tqdm(files_name):
         with open(original_rep + file_name + ".ann", "r", encoding="utf-8") as file:
             lines_file_original = file.readlines()
 
-        # Extract max existing id
         existing_ids = max(
             [int(line.split("\t")[0][1:]) for line in lines_file_original]
         )
 
-        # Lire le second fichier et préparer les nouvelles lignes
         new_lines = []
         with open(predicted_rep + file_name + ".ann", "r", encoding="utf-8") as file:
             for line in file:
                 parts = line.strip().split("\t")
                 if len(parts) < 3:
-                    continue  # Skip lines with wrong format
-                # Replace 'date' par 'Temporal'
+                    continue
                 if "date" in parts[1]:
                     parts[1] = parts[1].replace("date", "Temporal")
-                # Generate new identifier
                 parts[0] = "T" + str(existing_ids + 1)
                 existing_ids += 1
                 new_line = "\t".join(parts) + "\n"
                 new_lines.append(new_line)
 
-        # Merge lines from the original file with the new lines
         merged_lines = lines_file_original + new_lines
 
-        # Write the merged file
         with open(merged_rep + file_name + ".ann", "w", encoding="utf-8") as file:
             file.writelines(merged_lines)
 
@@ -143,35 +136,28 @@ def fusion_ann_train(
         merged_rep (str): destination directory of the merged annotations
         files_name (List[str]): list of file names to merge
     """
-    # Iterate over the files
     for file_name in tqdm(files_name):
         with open(original_rep + file_name + ".ann", "r", encoding="utf-8") as file:
             lines_file_original = file.readlines()
 
-        # Extract max existing id
         existing_ids = max(
             [int(line.split("\t")[0][1:]) for line in lines_file_original]
         )
 
-        # Lire le second fichier et préparer les nouvelles lignes
         new_lines = []
         with open(predicted_rep + file_name + ".ann", "r", encoding="utf-8") as file:
             for line in file:
                 parts = line.strip().split("\t")
                 if len(parts) < 3:
-                    continue  # Skip lines with wrong format
-                # Replace 'date' par 'Temporal'
+                    continue
                 if "date" in parts[1]:
                     parts[1] = parts[1].replace("date", "Temporal")
-                # Generate new identifier
                 parts[0] = "T" + str(existing_ids + 1)
                 existing_ids += 1
                 new_line = "\t".join(parts) + "\n"
                 new_lines.append(new_line)
 
-        # Merge lines from the original file with the new lines
         merged_lines = lines_file_original + new_lines
 
-        # Write the merged file
         with open(merged_rep + file_name + ".ann", "w", encoding="utf-8") as file:
             file.writelines(merged_lines)

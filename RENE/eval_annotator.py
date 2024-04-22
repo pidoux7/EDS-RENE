@@ -394,7 +394,7 @@ def perfect_match_ner(corpus_0: List[Doc], corpus_1: List[Doc]) -> Tuple:
     scores_liste, error_0, error_1, accord = [], [], [], []
 
     for num_doc, (doc_0, doc_1) in enumerate(zip(corpus_0, corpus_1)):
-        scores = {"accord": 0, "false_0": 0, "false_1": 0, "total": 0}
+        scores = {"accord": 0, "error_0": 0, "error_1": 0, "total": 0}
 
         scores_0, error, concord = scoring(doc_0.spans, doc_1.spans, num_doc)
         error_0.extend(error)
