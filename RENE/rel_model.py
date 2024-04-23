@@ -3,6 +3,7 @@ import math as m
 import matplotlib.pyplot as plt
 from spacy.tokens import Doc, Span
 from typing import List, Tuple, Dict, Any
+from edsnlp import edsnlp
 
 sys.path.insert(0, "/home/pidoux/LIMICS/edsnlp")
 
@@ -29,7 +30,12 @@ class model_proximity:
         return corpus
 
     def predict(
-        self, corpus: List[Doc], max_dist: int, clean: bool = True
+        self,
+        corpus: List[Doc],
+        max_dist: int,
+        clean: bool = True,
+        method: str = "start",
+        sents=False,
     ) -> List[Doc]:
         """prédit les relations de dépendance entre les entités
 
@@ -46,46 +52,70 @@ class model_proximity:
         self.corpus = corpus
         if clean:
             self.corpus = self.clean_rel(self.corpus)
+        if sents:
+            nlp = edsnlp.blank("eds")
+            nlp.add_pipe("sentencizer")
+            doc_iterator = nlp.pipe(corpus)
+            corpus = list(doc_iterator)
+            corpus.sort(key=lambda x: x.text)
+            self.corpus = corpus
+
         for num_doc, doc in enumerate(self.corpus):
             for num_span_obj, span_obj in enumerate(doc.spans["Chemical_and_drugs"]):
                 if span_obj._.Tech is not None:
-                    self.iterate_over_sub(
-                        num_doc,
-                        num_span_obj,
-                        span_obj,
-                        "Chemical_and_drugs",
-                        max_dist,
-                    )
+                    if sents:
+                        self.iterate_over_sub_sents(
+                            num_doc,
+                            num_span_obj,
+                            span_obj,
+                            "Chemical_and_drugs",
+                            max_dist,
+                            method,
+                        )
+                    else:
+                        self.iterate_over_sub(
+                            num_doc,
+                            num_span_obj,
+                            span_obj,
+                            "Chemical_and_drugs",
+                            max_dist,
+                            method,
+                        )
             for num_span_obj, span_obj in enumerate(doc.spans["Temporal"]):
                 self.iterate_over_sub(
-                    num_doc, num_span_obj, span_obj, "Temporal", max_dist
+                    num_doc, num_span_obj, span_obj, "Temporal", max_dist, method
                 )
         return self.corpus
 
-    def iterate_over_sub(
+    def iterate_over_sub_sents(
         self,
         num_doc: int,
         num_span_obj: int,
         span_obj: Span,
         label_obj: str,
         max_dist: int,
+        method: str = "start",
     ) -> None:
-        """Itère sur les entités pour trouver les relations de dépendance
-
-        Args:
-            num_doc (int): Numero de document
-            num_span_obj (int): Numero de l'entité objet dans le document
-            span_obj (Span): Entité objet
-            label_obj (str): label de l'entité objet
-            max_dist (int): distance maximale pour laquelle une relation
-                            de dépendance est possible en char
-        """
         conserver = {"id_obj": None, "id_sub": None, "dist": m.inf}
+        info_obj = {"start": span_obj.start_char, "end": span_obj.end_char}
+        for sent in self.corpus[num_doc].sents:
+            if (
+                info_obj["start"] >= sent.start_char
+                and info_obj["end"] <= sent.end_char
+            ):
+                info_obj["start_sent"] = sent.start_char
+                info_obj["end_sent"] = sent.end_char
+                break  # peut etre implementer l'exception
+
         for num_span_sub, span_sub in enumerate(
             self.corpus[num_doc].spans["Chemical_and_drugs"]
         ):
-            if span_sub._.Tech is None:
-                dist = m.fabs(span_obj.start_char - span_sub.start_char)
+            if (
+                span_sub._.Tech is None
+                and span_sub.start_char >= info_obj["start_sent"]
+                and span_sub.end_char <= info_obj["end_sent"]
+            ):
+                dist = self.distance(span_sub, span_obj, method)
                 if dist < conserver["dist"] and dist != 0:
                     conserver["dist"] = dist
                     conserver["id_sub"] = num_span_sub
@@ -104,6 +134,76 @@ class model_proximity:
             self.corpus[num_doc].spans[label_obj][conserver["id_obj"]]._.rel.append(
                 {"nature": "inv_Depend", "span": conserver["span_sub"]}
             )
+
+    def iterate_over_sub(
+        self,
+        num_doc: int,
+        num_span_obj: int,
+        span_obj: Span,
+        label_obj: str,
+        max_dist: int,
+        method: str = "start",
+    ) -> None:
+        """Itère sur les entités pour trouver les relations de dépendance
+
+        Args:
+            num_doc (int): Numero de document
+            num_span_obj (int): Numero de l'entité objet dans le document
+            span_obj (Span): Entité objet
+            label_obj (str): label de l'entité objet
+            max_dist (int): distance maximale pour laquelle une relation
+                            de dépendance est possible en char
+        """
+        conserver = {"id_obj": None, "id_sub": None, "dist": m.inf}
+        for num_span_sub, span_sub in enumerate(
+            self.corpus[num_doc].spans["Chemical_and_drugs"]
+        ):
+            if span_sub._.Tech is None:
+                dist = self.distance(span_sub, span_obj, method)
+                if dist < conserver["dist"] and dist != 0:
+                    conserver["dist"] = dist
+                    conserver["id_sub"] = num_span_sub
+                    conserver["id_obj"] = num_span_obj
+                    conserver["span_sub"] = span_sub
+                    conserver["span_obj"] = span_obj
+        if (
+            conserver["dist"] <= max_dist
+            and conserver["id_sub"] is not None
+            and conserver["id_obj"] is not None
+        ):
+            self.corpus[num_doc].spans["Chemical_and_drugs"][
+                conserver["id_sub"]
+            ]._.rel.append({"nature": "Depend", "span": conserver["span_obj"]})
+
+            self.corpus[num_doc].spans[label_obj][conserver["id_obj"]]._.rel.append(
+                {"nature": "inv_Depend", "span": conserver["span_sub"]}
+            )
+
+    def distance(self, span_sub: Span, span_obj: Span, method: str = "start") -> int:
+        """Calcul la distance entre deux spans
+
+        Args:
+            span1 (Span): Span objet
+            span2 (Span): Span sujet
+            method (str, optional): Méthode de calcul de la distance.
+                                    Defaults to "start".
+
+        Returns:
+            int: Distance entre les spans
+        """
+        if method == "start":
+            return m.fabs(span_obj.start_char - span_sub.start_char)
+        elif method == "end":
+            return m.fabs(span_obj.end_char - span_sub.end_char)
+        elif method == "middle":
+            return m.fabs(
+                (span_obj.start_char + span_obj.end_char) / 2
+                - (span_sub.start_char + span_sub.end_char) / 2
+            )
+        elif method == "right":
+            return m.fabs(span_obj.start_char - span_sub.end_char)
+        elif method == "left":
+            return m.fabs(span_obj.end_char - span_sub.start_char)
 
     def score(self, corpus_true: List[Doc], corpus_pred: List[Doc]) -> Dict[str, Any]:
         """Score les relations prédites
@@ -202,7 +302,13 @@ class model_proximity:
         return POS, NEG, TOT
 
     def precision_recall_curve(
-        self, corpus_true: List[Doc], corpus_pred: List[Doc], max_dist: int, pas: int
+        self,
+        corpus_true: List[Doc],
+        corpus_pred: List[Doc],
+        max_dist: int,
+        pas: int,
+        method: str = "start",
+        sents=False,
     ) -> None:
         """Trace la courbe de précision-rappel
 
@@ -218,7 +324,9 @@ class model_proximity:
         f1_scores = []
 
         for dist in distances:
-            predicted_corpus = self.predict(corpus_pred, dist)
+            predicted_corpus = self.predict(
+                corpus_pred, dist, method=method, sents=sents
+            )
             scores = self.score(corpus_true, predicted_corpus)
             precision_scores.append(scores["precision"])
             recall_scores.append(scores["rappel"])
