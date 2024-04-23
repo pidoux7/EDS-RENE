@@ -1,23 +1,48 @@
 import sys
 import math as m
 import matplotlib.pyplot as plt
+from spacy.tokens import Doc, Span
+from typing import List, Tuple, Dict, Any
 
 sys.path.insert(0, "/home/pidoux/LIMICS/edsnlp")
 
 
+# typer la classe et les fonctions
 class model_proximity:
     def __init__(self):
         self.corpus = None
 
-    def clean_rel(self, corpus):
+    def clean_rel(self, corpus: List[Doc]) -> List[Doc]:
+        """supprime les relations dans le corpus
+
+        Args:
+            corpus (List[Doc]): Documents à nettoyer
+
+        Returns:
+            List[Doc]: Documents nettoyés
+        """
         self.corpus = corpus
         for i, doc in enumerate(corpus):
             for k, v in doc.spans.items():
                 for j, span in enumerate(v):
-                    corpus[i].spans[k][j]._.rel = []
+                    self.corpus[i].spans[k][j]._.rel = []
         return corpus
 
-    def predict(self, corpus, max_dist=50, clean=True):
+    def predict(
+        self, corpus: List[Doc], max_dist: int, clean: bool = True
+    ) -> List[Doc]:
+        """prédit les relations de dépendance entre les entités
+
+        Args:
+            corpus (List[Doc]): corpus à prédire
+            max_dist (int): distance maximale pour laquelle
+                            une relation de dépendance est possible en char
+            clean (bool, optional): Nettoie les relations avant de prédire.
+                                    Defaults to True.
+
+        Returns:
+            List[Doc]: corpus avec les relations prédites
+        """
         self.corpus = corpus
         if clean:
             self.corpus = self.clean_rel(self.corpus)
@@ -37,7 +62,24 @@ class model_proximity:
                 )
         return self.corpus
 
-    def iterate_over_sub(self, num_doc, num_span_obj, span_obj, label_obj, max_dist=50):
+    def iterate_over_sub(
+        self,
+        num_doc: int,
+        num_span_obj: int,
+        span_obj: Span,
+        label_obj: str,
+        max_dist: int,
+    ) -> None:
+        """Itère sur les entités pour trouver les relations de dépendance
+
+        Args:
+            num_doc (int): Numero de document
+            num_span_obj (int): Numero de l'entité objet dans le document
+            span_obj (Span): Entité objet
+            label_obj (str): label de l'entité objet
+            max_dist (int): distance maximale pour laquelle une relation
+                            de dépendance est possible en char
+        """
         conserver = {"id_obj": None, "id_sub": None, "dist": m.inf}
         for num_span_sub, span_sub in enumerate(
             self.corpus[num_doc].spans["Chemical_and_drugs"]
@@ -63,7 +105,17 @@ class model_proximity:
                 {"nature": "inv_Depend", "span": conserver["span_sub"]}
             )
 
-    def score(self, corpus_true, corpus_pred):
+    def score(self, corpus_true: List[Doc], corpus_pred: List[Doc]) -> Dict[str, Any]:
+        """Score les relations prédites
+
+        Args:
+            corpus_true (List[Doc]): corpus avec les vraies relations
+            corpus_pred (List[Doc]): corpus avec les relations prédites
+
+        Returns:
+            Dict[str, Any]: Scores: TP, FP, FN, TOT (nombres d'entité itérée),
+                                    precision, rappel, f1
+        """
         self.corpus_true = corpus_true
         self.corpus_pred = corpus_pred
         scores = {"TP": 0, "FP": 0, "FN": 0, "TOT": 0}
@@ -71,7 +123,6 @@ class model_proximity:
             corpus_true, corpus_pred
         )
         _, scores["FP"], tot = self.iteration_eval(corpus_pred, corpus_true)
-        scores["TOT"] += tot
         scores["precision"] = (
             scores["TP"] / (scores["TP"] + scores["FP"])
             if scores["TP"] + scores["FP"] != 0
@@ -91,39 +142,18 @@ class model_proximity:
         )
         return scores
 
-    def precision_recall_curve(self, corpus_true, corpus_pred, max_dist=100, pas=5):
-        distances = list(range(0, max_dist, pas))
-        precision_scores = []
-        recall_scores = []
-        f1_scores = []
+    def iteration_eval(
+        self, corpus_t: List[Doc], corpus_p: List[Doc]
+    ) -> Tuple[int, int, int]:
+        """Itère sur les documents et les entités pour évaluer les relations
 
-        for dist in distances:
-            predicted_corpus = self.predict(corpus_pred, dist)
-            scores = self.score(corpus_true, predicted_corpus)
-            precision_scores.append(scores["precision"])
-            recall_scores.append(scores["rappel"])
-            f1_scores.append(scores["f1"])
+        Args:
+            corpus_t (List[Doc]): corpus avec les vraies relations
+            corpus_p (List[Doc]): corpus avec les relations prédites
 
-        plt.figure(figsize=(10, 5))
-        plt.plot(distances, precision_scores, label="Precision")
-        plt.plot(distances, recall_scores, label="Recall")
-        plt.plot(distances, f1_scores, label="F1 Score")
-        plt.xlabel("Distance Threshold")
-        plt.ylabel("Scores")
-        plt.title("Precision-Recall Curve")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-        plt.figure(figsize=(10, 5))
-        plt.plot(recall_scores, precision_scores, marker="o")
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-        plt.title("Precision vs. Recall Curve")
-        plt.grid(True)
-        plt.show()
-
-    def iteration_eval(self, corpus_t, corpus_p):
+        Returns:
+            Tuple[int, int, int]: TP, FP, TOT
+        """
         POS = 0
         NEG = 0
         TOT = 0
@@ -170,3 +200,45 @@ class model_proximity:
                                 if not matched:
                                     NEG += 1
         return POS, NEG, TOT
+
+    def precision_recall_curve(
+        self, corpus_true: List[Doc], corpus_pred: List[Doc], max_dist: int, pas: int
+    ) -> None:
+        """Trace la courbe de précision-rappel
+
+        Args:
+            corpus_true (List[Doc]): corpus avec les vraies relations
+            corpus_pred (List[Doc]): corpus avec les relations prédites
+            max_dist (int): distance maximale pour le chart
+            pas (int): espacement entre les points
+        """
+        distances = list(range(0, max_dist, pas))
+        precision_scores = []
+        recall_scores = []
+        f1_scores = []
+
+        for dist in distances:
+            predicted_corpus = self.predict(corpus_pred, dist)
+            scores = self.score(corpus_true, predicted_corpus)
+            precision_scores.append(scores["precision"])
+            recall_scores.append(scores["rappel"])
+            f1_scores.append(scores["f1"])
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(distances, precision_scores, label="Precision")
+        plt.plot(distances, recall_scores, label="Recall")
+        plt.plot(distances, f1_scores, label="F1 Score")
+        plt.xlabel("Distance Threshold")
+        plt.ylabel("Scores")
+        plt.title("Precision-Recall Curve")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(recall_scores, precision_scores, marker="o")
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.title("Precision vs. Recall Curve")
+        plt.grid(True)
+        plt.show()
