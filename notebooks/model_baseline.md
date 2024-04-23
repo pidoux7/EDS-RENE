@@ -42,11 +42,8 @@ dossier_1 = "/home/pidoux/LIMICS/brat/data/RENE/"
 ```
 
 ```python
-doc_iterator = edsnlp.data.read_standoff(
-    dossier_1,
-)
-corpus = list(doc_iterator)
-corpus.sort(key=lambda x: x.text)
+# if not Span.has_extension("rel"):
+# Span.set_extension("rel", default=[])
 ```
 
 ```python
@@ -58,20 +55,55 @@ corpus_true.sort(key=lambda x: x.text)
 ```
 
 ```python
+doc_iterator = edsnlp.data.read_standoff(
+    dossier_1,
+)
+# nlp = edsnlp.blank("eds")
+# nlp.add_pipe("sentencizer")
+# doc_iterator = doc_iterator.map_pipeline(nlp)
+corpus = list(doc_iterator)
+corpus.sort(key=lambda x: x.text)
+```
+
+```python
+for doc in corpus:
+    for sent in doc.sents:
+        print(sent.text)
+
+        print(sent.start, sent.end)
+        print(sent.start_char, sent.end_char)
+        print(sent.ents)
+        print("\n")
+```
+
+```python
+for doc in corpus:
+    for k, ents in doc.spans.items():
+        for ent in ents:
+            print(ent._.rel)
+```
+
+```python
 model = model_proximity()
-for i in range(0, 101, 5):
-    corpus_pred = model.predict(corpus, max_dist=i, clean=True)
+for i in range(0, 101, 1):
+    corpus_pred = model.predict(
+        corpus, max_dist=i, clean=True, method="right", sents=True
+    )
     print(i, model.score(corpus_true, corpus_pred))
 ```
 
 ```python
 corpus_pred = model.predict(corpus, max_dist=45, clean=True)
-model.precision_recall_curve(corpus_true, corpus_pred, max_dist=100, pas=1)
+model.precision_recall_curve(
+    corpus_true, corpus_pred, max_dist=100, pas=1, method="right", sents=True
+)
 ```
 
 ```python
 model = model_proximity()
-corpus_pred = model.predict(corpus, max_dist=45, clean=True)
+corpus_pred = model.predict(corpus, max_dist=45, clean=True, method="right")
+s = model.score(corpus_true, corpus_pred)
+print(s)
 ```
 
 ```python
