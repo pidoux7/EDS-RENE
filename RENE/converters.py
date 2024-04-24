@@ -334,8 +334,8 @@ class StandoffDict2DocConverter:
                                     str(spa2.end_char),
                                 ]:  # si l'entité target est la meme que celle du span
                                     relation = {
-                                        "nature": rel["relation_label"],
-                                        "span": doc.spans[label2][j],
+                                        "type": rel["relation_label"],
+                                        "target": doc.spans[label2][j],
                                     }  # creer la relation
                                     doc.spans[label][i]._.rel.append(
                                         relation
@@ -360,8 +360,8 @@ class StandoffDict2DocConverter:
                                     str(spa2.end_char),
                                 ]:
                                     relation = {
-                                        "nature": "inv_" + rel["relation_label"],
-                                        "span": doc.spans[label2][j],
+                                        "type": "inv_" + rel["relation_label"],
+                                        "target": doc.spans[label2][j],
                                     }
                                     doc.spans[label][i]._.rel.append(relation)
                                     bo = True

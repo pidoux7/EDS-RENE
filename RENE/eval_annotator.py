@@ -176,6 +176,17 @@ def process_scores(scores: Dict) -> Tuple[Dict, Dict]:
                     target_dict[label]["error_0"] += 1
                 elif "1" in key:
                     target_dict[label]["error_1"] += 1
+            target_dict[label]["precision"] = target_dict[label]["accord"] / (
+                target_dict[label]["accord"] + target_dict[label]["error_1"]
+            )
+            target_dict[label]["recall"] = target_dict[label]["accord"] / (
+                target_dict[label]["accord"] + target_dict[label]["error_0"]
+            )
+            target_dict[label]["f1"] = (
+                2
+                * (target_dict[label]["precision"] * target_dict[label]["recall"])
+                / (target_dict[label]["precision"] + target_dict[label]["recall"])
+            )
 
     return data_exact, data_partial
 
@@ -193,6 +204,9 @@ def create_dataframe(data_dict: Dict) -> pd.DataFrame:
     accords = [0]
     error_0s = [0]
     error_1s = [0]
+    precisions = [0]
+    recalls = [0]
+    f1s = [0]
     percentages = [0]
     totals = [0]
 
@@ -202,12 +216,20 @@ def create_dataframe(data_dict: Dict) -> pd.DataFrame:
         error_1 = counts["error_1"]
         total = accord + error_0 + error_1
         error_percentage = ((error_0 + error_1) / total * 100) if total > 0 else 0
+        precision = accord / (accord + error_1) if (accord + error_1) > 0 else 0
+        recall = accord / (accord + error_0) if (accord + error_0) > 0 else 0
+        f1 = (
+            2 * (precision * recall) / (precision + recall)
+            if (precision + recall) > 0
+            else 0
+        )
 
         labels.append(label)
         accords.append(accord)
         error_0s.append(error_0)
         error_1s.append(error_1)
         percentages.append(f"{error_percentage:.2f}%")
+        f1s.append(f"{f1:.2f}")
         totals.append(total)
 
         accords[0] += accord
@@ -220,6 +242,14 @@ def create_dataframe(data_dict: Dict) -> pd.DataFrame:
         overall_error_percentage = total_errors / totals[0] * 100
         percentages[0] = f"{overall_error_percentage:.2f}%"
 
+    if totals[0] > 0:
+        precision = accords[0] / (accords[0] + error_1s[0])
+        recall = accords[0] / (accords[0] + error_0s[0])
+        f1 = 2 * (precision * recall) / (precision + recall)
+        precisions[0] = f"{precision:.2f}"
+        recalls[0] = f"{recall:.2f}"
+        f1s[0] = f"{f1:.2f}"
+
     df = pd.DataFrame(
         {
             "Label": labels,
@@ -227,6 +257,7 @@ def create_dataframe(data_dict: Dict) -> pd.DataFrame:
             "Error 0": error_0s,
             "Error 1": error_1s,
             "% Error Total": percentages,
+            "f1": f1s,
             "Total": totals,
         }
     )
@@ -456,7 +487,6 @@ def creer_tableau_synthese(
     df_accord = pd.DataFrame(accord, columns=liste)
     df_erreur_0 = pd.DataFrame(erreur_0, columns=liste)
     df_erreur_1 = pd.DataFrame(erreur_1, columns=liste)
-
     counts_accord = df_accord[regroupement].value_counts()
     counts_erreur_0 = df_erreur_0[regroupement].value_counts()
     counts_erreur_1 = df_erreur_1[regroupement].value_counts()
@@ -472,16 +502,48 @@ def creer_tableau_synthese(
     df_summary = df_summary.astype(int)
 
     df_summary["Total"] = df_summary.sum(axis=1)
+    df_summary["Précision"] = (
+        (df_summary["Accord"] / (df_summary["Accord"] + df_summary["Erreur_1"]))
+        .fillna(0)
+        .round(4)
+    )
+    df_summary["Rappel"] = (
+        (df_summary["Accord"] / (df_summary["Accord"] + df_summary["Erreur_0"]))
+        .fillna(0)
+        .round(4)
+    )
+    df_summary["F1"] = (
+        (
+            2
+            * df_summary["Précision"]
+            * df_summary["Rappel"]
+            / (df_summary["Précision"] + df_summary["Rappel"])
+        )
+        .fillna(0)
+        .round(2)
+    )
+
     df_summary["Pourcentage d'Erreur"] = (
         (df_summary["Erreur_0"] + df_summary["Erreur_1"]) / df_summary["Total"] * 100
     ).round(2)
 
     total_row = df_summary.sum()
+    total_row["Précision"] = total_row["Accord"] / (
+        total_row["Accord"] + total_row["Erreur_1"]
+    )
+    total_row["Rappel"] = total_row["Accord"] / (
+        total_row["Accord"] + total_row["Erreur_0"]
+    )
+    total_row["F1"] = (
+        2
+        * (total_row["Précision"] * total_row["Rappel"])
+        / (total_row["Précision"] + total_row["Rappel"])
+    )
     total_row["Pourcentage d'Erreur"] = (
         (total_row["Erreur_0"] + total_row["Erreur_1"]) / total_row["Total"] * 100
     ).round(2)
     df_summary.loc["Total " + regroupement] = total_row
-
+    df_summary = df_summary.drop(["Précision", "Rappel"], axis=1)
     return df_summary
 
 
@@ -545,11 +607,11 @@ def extract_rel_objet(span_objet: Dict) -> Tuple:
         Tuple: Tuple containing the extracted information
     """
     return (
-        span_objet["nature"],
-        span_objet["span"].start_char,
-        span_objet["span"].end_char,
-        span_objet["span"].text,
-        span_objet["span"].label_,
+        span_objet["type"],
+        span_objet["target"].start_char,
+        span_objet["target"].end_char,
+        span_objet["target"].text,
+        span_objet["target"].label_,
     )
 
 
