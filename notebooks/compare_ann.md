@@ -65,6 +65,7 @@ df_partial
 # Evaluation Attributs
 
 ```python
+pd.options.display.float_format = '{:,.2f}'.format
 scores_liste, error_0, error_1,accord = perfect_match_ner(corpus_0, corpus_1)
 attribut = ["label", "Tech", "Negation", "Certainty", "Temporality", "Family", "AttDate", "AttTemp", "Action", "RefTemp"]
 df_concat = pd.DataFrame()
@@ -78,6 +79,7 @@ df_concat
 df_scores = pd.DataFrame(scores_liste)
 sum_row = df_scores.sum()
 df_scores = df_scores.append(sum_row, ignore_index=True)
+df_scores["F1"] = 2 * (df_scores["accord"]/ (df_scores["accord"] + df_scores["error_1"])) * (df_scores["accord"]/ (df_scores["accord"] + df_scores["error_0"])) / ((df_scores["accord"]/ (df_scores["accord"] + df_scores["error_1"])) + (df_scores["accord"]/ (df_scores["accord"] + df_scores["error_0"])))
 df_scores
 ```
 
@@ -99,6 +101,7 @@ scores_liste_rel, error_0_rel, error_1_rel = perfect_match_rel(corpus_0, corpus_
 df_scores_rel = pd.DataFrame(scores_liste_rel)
 sum_row = df_scores_rel.sum()
 df_scores_rel = df_scores_rel.append(sum_row, ignore_index=True)
+df_scores_rel["F1"] = 2 * (df_scores_rel["accord"]/ (df_scores_rel["accord"] + df_scores_rel["error_1"])) * (df_scores_rel["accord"]/ (df_scores_rel["accord"] + df_scores_rel["error_0"])) / ((df_scores_rel["accord"]/ (df_scores_rel["accord"] + df_scores_rel["error_1"])) + (df_scores_rel["accord"]/ (df_scores_rel["accord"] + df_scores_rel["error_0"])))
 df_scores_rel
 ```
 

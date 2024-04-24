@@ -42,11 +42,6 @@ dossier_1 = "/home/pidoux/LIMICS/brat/data/RENE/"
 ```
 
 ```python
-# if not Span.has_extension("rel"):
-# Span.set_extension("rel", default=[])
-```
-
-```python
 doc_iterator = edsnlp.data.read_standoff(
     dossier_1,
 )
@@ -58,22 +53,8 @@ corpus_true.sort(key=lambda x: x.text)
 doc_iterator = edsnlp.data.read_standoff(
     dossier_1,
 )
-# nlp = edsnlp.blank("eds")
-# nlp.add_pipe("sentencizer")
-# doc_iterator = doc_iterator.map_pipeline(nlp)
 corpus = list(doc_iterator)
 corpus.sort(key=lambda x: x.text)
-```
-
-```python
-for doc in corpus:
-    for sent in doc.sents:
-        print(sent.text)
-
-        print(sent.start, sent.end)
-        print(sent.start_char, sent.end_char)
-        print(sent.ents)
-        print("\n")
 ```
 
 ```python
@@ -85,7 +66,7 @@ for doc in corpus:
 
 ```python
 model = model_proximity()
-for i in range(0, 101, 1):
+for i in range(0, 100, 1):
     corpus_pred = model.predict(
         corpus, max_dist=i, clean=True, method="right", sents=True
     )
@@ -93,17 +74,16 @@ for i in range(0, 101, 1):
 ```
 
 ```python
-corpus_pred = model.predict(corpus, max_dist=45, clean=True)
+corpus_pred = model.predict(corpus, max_dist=100, clean=True)
 model.precision_recall_curve(
-    corpus_true, corpus_pred, max_dist=100, pas=1, method="right", sents=True
+    corpus_true,
+    corpus_pred,
+    max_dist=100,
+    pas=1,
+    label="form",
+    method="right",
+    sents=False,
 )
-```
-
-```python
-model = model_proximity()
-corpus_pred = model.predict(corpus, max_dist=45, clean=True, method="right")
-s = model.score(corpus_true, corpus_pred)
-print(s)
 ```
 
 ```python
@@ -112,15 +92,15 @@ for i, doc in enumerate(corpus_pred):
     pred_rel = []
     for i, span_sub in enumerate(doc.spans["Chemical_and_drugs"]):
         if span_sub._.Tech is None:
-            med = [x for x in span_sub._.rel if x["nature"] == "Depend"]
+            med = [x for x in span_sub._.rel if x["type"] == "Depend"]
             info = [span_sub.text]
             for x in med:
-                if x["span"]._.Tech is not None:
-                    info.append(x["span"]._.Tech)
-                    info.append(x["span"].text)
-                if x["span"].label_ == "Temporal":
-                    info.append(x["span"].label_)
-                    info.append(x["span"].text)
+                if x["target"]._.Tech is not None:
+                    info.append(x["target"]._.Tech)
+                    info.append(x["target"].text)
+                if x["target"].label_ == "Temporal":
+                    info.append(x["target"].label_)
+                    info.append(x["target"].text)
             print(info)
             pred_rel.append(info)
     pred_rels.append(pred_rel)
