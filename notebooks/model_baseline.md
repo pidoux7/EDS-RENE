@@ -60,30 +60,59 @@ corpus.sort(key=lambda x: x.text)
 ```python
 for doc in corpus:
     for k, ents in doc.spans.items():
+        dic = {}
         for ent in ents:
-            print(ent._.rel)
+            dic[ent] = 3
+for k, v in dic.items():
+    print(k, v)
+    print(type(k))
+```
+
+dictionnaire avec clé span et valeur soit
+- string
+- liste string
+- dictionnaire
+- liste de dictionnaire
+
+```python
+doc.user_data
 ```
 
 ```python
 model = model_proximity()
-for i in range(0, 100, 1):
-    corpus_pred = model.predict(
-        corpus, max_dist=i, clean=True, method="right", sents=True
-    )
-    print(i, model.score(corpus_true, corpus_pred))
 ```
 
 ```python
-corpus_pred = model.predict(corpus, max_dist=100, clean=True)
-model.precision_recall_curve(
-    corpus_true,
-    corpus_pred,
-    max_dist=100,
-    pas=1,
-    label="form",
-    method="right",
-    sents=False,
-)
+corpus_pred = model.predict(
+        corpus, max_dist=i, clean=True, method="right", sents=True
+    )
+print(i, model.score(corpus_true, corpus_pred))
+```
+
+```python
+corpus_pred = corpus
+item = [
+    "total",
+    "dosage",
+    "form",
+    "route",
+    "strength",
+    "Temporal",
+    "Duration",
+    "Frequency",
+    "Time",
+    "Date",
+]
+for i in item:
+    model.precision_recall_curve(
+        corpus_true,
+        corpus_pred,
+        max_dist=100,
+        pas=1,
+        label=i,
+        method="right",
+        sents=True,
+    )
 ```
 
 ```python

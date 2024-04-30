@@ -16,7 +16,7 @@ jupyter:
 ```python
 import sys
 
-sys.path.insert(0, "/home/pidoux/LIMICS/edsnlp")
+sys.path.insert(0, "/home/pidoux/edsnlp")
 import edsnlp
 
 %reload_ext jupyter_black
