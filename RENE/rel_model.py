@@ -161,8 +161,8 @@ class model_proximity:
                     conserver["id_obj"] = num_span_obj
                     conserver["span_sub"] = span_sub
                     conserver["span_obj"] = span_obj
-        if opt_dist and "span_obj" in conserver:
-            max_dist = self.best_max(conserver["span_obj"])
+        # if opt_dist and "span_obj" in conserver:
+        # max_dist = self.best_max(conserver["span_obj"])
 
         if (
             conserver["dist"] <= max_dist
@@ -177,8 +177,9 @@ class model_proximity:
                 {"type": "inv_Depend", "target": conserver["span_sub"]}
             )
 
+    """
     def best_max(self, span_obj: Span) -> int:
-        """Trouve la distance maximale pour laquelle
+        '''Trouve la distance maximale pour laquelle
             une relation de dépendance est possible
 
         Args:
@@ -186,7 +187,7 @@ class model_proximity:
 
         Returns:
             int: distance maximale
-        """
+        '''
         if span_obj.label_ == "Temporal":
             return 27
         if span_obj.label_ == "Chemical_and_drugs":
@@ -200,6 +201,7 @@ class model_proximity:
                 return 45
         else:
             return 45
+    """
 
     def iterate_over_sub(
         self,
@@ -235,8 +237,8 @@ class model_proximity:
                     conserver["span_sub"] = span_sub
                     conserver["span_obj"] = span_obj
 
-        if opt_dist and "span_obj" in conserver:
-            max_dist = self.best_max(conserver["span_obj"])
+        # if opt_dist and "span_obj" in conserver:
+        # max_dist = self.best_max(conserver["span_obj"])
         if (
             conserver["dist"] <= max_dist
             and conserver["id_sub"] is not None
@@ -339,6 +341,10 @@ class model_proximity:
             "route": {"pos": 0, "neg": 0},
             "strength": {"pos": 0, "neg": 0},
             "Temporal": {"pos": 0, "neg": 0},
+            "Duration": {"pos": 0, "neg": 0},
+            "Frequency": {"pos": 0, "neg": 0},
+            "Time": {"pos": 0, "neg": 0},
+            "Date": {"pos": 0, "neg": 0},
         }
         # itere doc
         for i, doc in enumerate(corpus_t):
@@ -392,6 +398,15 @@ class model_proximity:
                                                         dic[rel_true["target"].label_][
                                                             "pos"
                                                         ] += 1
+                                                        if (
+                                                            rel_true["target"]._.AttTemp
+                                                            is not None
+                                                        ):
+                                                            dic[
+                                                                rel_true[
+                                                                    "target"
+                                                                ]._.AttTemp
+                                                            ]["pos"] += 1
                                                     dic["total"]["pos"] += 1
                                                     matched = True
                                                     continue
@@ -404,6 +419,10 @@ class model_proximity:
                                         dic[rel_true["target"]._.Tech]["neg"] += 1
                                     if rel_true["target"].label_ == "Temporal":
                                         dic[rel_true["target"].label_]["neg"] += 1
+                                        if rel_true["target"]._.AttTemp is not None:
+                                            dic[rel_true["target"]._.AttTemp][
+                                                "neg"
+                                            ] += 1
                                     dic["total"]["neg"] += 1
         return dic
 
