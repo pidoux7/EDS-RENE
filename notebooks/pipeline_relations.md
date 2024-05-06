@@ -60,12 +60,62 @@ corpus.sort(key=lambda x: x.text)
 ```
 
 ```python
+relations = [
+    {
+        "subject": [{"label": "Chemical_and_drugs", "attr": {"Tech": [None]}}],
+        "object": [
+            {
+                "label": "Temporal",
+                "attr": {"AttTemp": ["Duration", "Date"]},
+            },
+            {
+                "label": "Chemical_and_drugs",
+                "attr": {"Tech": ["dosage", "route", "strength", "form"]},
+            },
+        ],
+        "type": "Depend",
+        "inv_type": "inv_Depend",
+    },
+    {
+        "subject": [{"label": "DISO", "attr": {"Tech": [None]}}],
+        "object": [
+            {
+                "label": "Temporal",
+                "attr": {"AttTemp": ["Duration", "Date"]},
+            },
+        ],
+        "type": "Depend",
+        "inv_type": "inv_Depend",
+    },
+]
+```
+
+```python
+relations = [
+    {
+        "subject": [{"label": "DISO", "attr": None}],
+        "object": [
+            {
+                "label": "Temporal",
+                "attr": {"AttTemp": ["Duration", "Date"]},
+            },
+        ],
+        "type": "Depend",
+        "inv_type": "inv_Depend",
+    },
+]
+```
+
+```python
 nlp = edsnlp.blank("eds")
+nlp.add_pipe("eds.sentences")
 nlp.add_pipe(
     "eds.relations",
     config={
-        "use_sentences": False,
-        "clean_rel": False,
+        "scheme": "./relations.json",
+        "use_sentences": True,
+        "clean_rel": True,
+        "proximity_method": "sym",
         "max_dist": 45,
     },
 )
@@ -81,5 +131,9 @@ type(corpus)
 for doc in corpus:
     for k, v in doc.spans.items():
         for span in v:
-            print(span._.rel)
+            print(span.text, span._.rel)
+```
+
+```python
+
 ```
