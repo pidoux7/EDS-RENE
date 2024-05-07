@@ -16,7 +16,9 @@
                 "attr": {
                     "AttTemp": [
                         "Duration",
-                        "Date"
+                        "Date",
+                        "Frequency",
+                        "Time"
                     ]
                 }
             },
@@ -28,31 +30,6 @@
                         "route",
                         "strength",
                         "form"
-                    ]
-                }
-            }
-        ],
-        "type": "Depend",
-        "inv_type": "inv_Depend"
-    },
-    {
-        "subject": [
-            {
-                "label": "DISO",
-                "attr": {
-                    "Tech": [
-                        null
-                    ]
-                }
-            }
-        ],
-        "object": [
-            {
-                "label": "Temporal",
-                "attr": {
-                    "AttTemp": [
-                        "Duration",
-                        "Date"
                     ]
                 }
             }
