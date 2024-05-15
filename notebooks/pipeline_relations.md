@@ -102,7 +102,7 @@ nlp.add_pipe(
         "use_sentences": True,
         "clean_rel": True,
         "proximity_method": "sym",
-        "max_dist": 1,
+        "max_dist": 45,
     },
 )
 corpus = nlp.pipe(corpus)
