@@ -63,13 +63,13 @@ def process_ann_file(file_path):
     write_ann_file(file_path, new_lines)
 
 def process_all_ann_files(directory):
-    # Utilise glob pour trouver tous les fichiers .ann dans le répertoire
+
     ann_files = glob.glob(os.path.join(directory, "*.ann"))
     for ann_file in ann_files:
         process_ann_file(ann_file)
 
 
-directory = "./RENE/"  # Remplacez par le chemin de votre dossier contenant les fichiers .ann
+directory = "./RENE/"
 process_all_ann_files(directory)
 ```
 

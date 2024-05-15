@@ -5,10 +5,8 @@ import pytest
 from spacy.tokens import Doc, Span
 import edsnlp
 
-# Assurez-vous que le chemin vers edsnlp est en premier dans sys.path
-sys.path.insert(0, "/home/pidoux/edsnlp")
 
-# Importation des modules après avoir ajouté le chemin
+sys.path.insert(0, "/home/pidoux/edsnlp")
 
 
 @mark.parametrize("use_sentences", [True, False])
