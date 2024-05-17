@@ -577,7 +577,7 @@ def view_df_ner(error_liste: List[str]) -> pd.DataFrame:
     )
 
 
-def extract_rel_sujet(span_sujet: Span, num_doc: int) -> Tuple:
+def extract_rel_source(span_source: Span, num_doc: int) -> Tuple:
     """extract information from a span
 
     Args:
@@ -589,14 +589,14 @@ def extract_rel_sujet(span_sujet: Span, num_doc: int) -> Tuple:
     """
     return (
         num_doc,
-        span_sujet.start_char,
-        span_sujet.end_char,
-        span_sujet.text,
-        span_sujet.label_,
+        span_source.start_char,
+        span_source.end_char,
+        span_source.text,
+        span_source.label_,
     )
 
 
-def extract_rel_objet(span_objet: Dict) -> Tuple:
+def extract_rel_target(span_target: Dict) -> Tuple:
     """extract information from a span
 
     Args:
@@ -607,11 +607,11 @@ def extract_rel_objet(span_objet: Dict) -> Tuple:
         Tuple: Tuple containing the extracted information
     """
     return (
-        span_objet["type"],
-        span_objet["target"].start_char,
-        span_objet["target"].end_char,
-        span_objet["target"].text,
-        span_objet["target"].label_,
+        span_target["type"],
+        span_target["target"].start_char,
+        span_target["target"].end_char,
+        span_target["target"].text,
+        span_target["target"].label_,
     )
 
 
@@ -626,10 +626,10 @@ def extract_rel(span: Span, num_doc: int) -> Generator[Tuple, None, None]:
         Generator[Tuple, None, None]:
             Generator of tuples containing the extracted information
     """
-    sujet = extract_rel_sujet(span, num_doc)
-    for objet in span._.rel:
-        objet = extract_rel_objet(objet)
-        yield sujet + objet
+    source = extract_rel_source(span, num_doc)
+    for target in span._.rel:
+        target = extract_rel_target(target)
+        yield source + target
 
 
 def scoring_rel(

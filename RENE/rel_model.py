@@ -67,58 +67,60 @@ class model_proximity:
             self.corpus = corpus
 
         for num_doc, doc in enumerate(self.corpus):
-            for num_span_obj, span_obj in enumerate(doc.spans["Chemical_and_drugs"]):
-                if span_obj._.Tech is not None:
+            for num_span_target, span_target in enumerate(
+                doc.spans["Chemical_and_drugs"]
+            ):
+                if span_target._.Tech is not None:
                     if sents:
-                        self.iterate_over_sub_sents(
+                        self.iterate_over_source_sents(
                             num_doc,
-                            num_span_obj,
+                            num_span_target,
                             opt_dist,
-                            span_obj,
+                            span_target,
                             "Chemical_and_drugs",
                             max_dist,
                             method,
                         )
                     else:
-                        self.iterate_over_sub(
+                        self.iterate_over_source(
                             num_doc,
-                            num_span_obj,
+                            num_span_target,
                             opt_dist,
-                            span_obj,
+                            span_target,
                             "Chemical_and_drugs",
                             max_dist,
                             method,
                         )
-            for num_span_obj, span_obj in enumerate(doc.spans["Temporal"]):
+            for num_span_target, span_target in enumerate(doc.spans["Temporal"]):
                 if sents:
-                    self.iterate_over_sub_sents(
+                    self.iterate_over_source_sents(
                         num_doc,
-                        num_span_obj,
+                        num_span_target,
                         opt_dist,
-                        span_obj,
+                        span_target,
                         "Temporal",
                         max_dist,
                         method,
                     )
                 else:
-                    self.iterate_over_sub(
+                    self.iterate_over_source(
                         num_doc,
-                        num_span_obj,
+                        num_span_target,
                         opt_dist,
-                        span_obj,
+                        span_target,
                         "Temporal",
                         max_dist,
                         method,
                     )
         return self.corpus
 
-    def iterate_over_sub_sents(
+    def iterate_over_source_sents(
         self,
         num_doc: int,
-        num_span_obj: int,
+        num_span_target: int,
         opt_dist: bool,
-        span_obj: Span,
-        label_obj: str,
+        span_target: Span,
+        label_target: str,
         max_dist: int,
         method: str,
     ) -> None:
@@ -127,89 +129,89 @@ class model_proximity:
 
         Args:
             num_doc (int): numero de document
-            num_span_obj (int): numero de l'entité objet dans le document
-            span_obj (Span): entité objet
-            label_obj (str): label de l'entité objet
+            num_span_target (int): numero de l'entité target dans le document
+            span_target (Span): entité target
+            label_target (str): label de l'entité target
             max_dist (int): distance maximale pour laquelle une relation
                             de dépendance est possible en char
             method (str, optional): Méthode de calcul de la distance.
                                     Defaults to "start".
         """
-        conserver = {"id_obj": None, "id_sub": None, "dist": m.inf}
-        info_obj = {"start": span_obj.start_char, "end": span_obj.end_char}
+        conserver = {"id_target": None, "id_source": None, "dist": m.inf}
+        info_target = {"start": span_target.start_char, "end": span_target.end_char}
         for sent in self.corpus[num_doc].sents:
             if (
-                info_obj["start"] >= sent.start_char
-                and info_obj["end"] <= sent.end_char
+                info_target["start"] >= sent.start_char
+                and info_target["end"] <= sent.end_char
             ):
-                info_obj["start_sent"] = sent.start_char
-                info_obj["end_sent"] = sent.end_char
+                info_target["start_sent"] = sent.start_char
+                info_target["end_sent"] = sent.end_char
                 break  # peut etre implementer l'exception
 
-        for num_span_sub, span_sub in enumerate(
+        for num_span_source, span_source in enumerate(
             self.corpus[num_doc].spans["Chemical_and_drugs"]
         ):
             if (
-                span_sub._.Tech is None
-                and span_sub.start_char >= info_obj["start_sent"]
-                and span_sub.end_char <= info_obj["end_sent"]
+                span_source._.Tech is None
+                and span_source.start_char >= info_target["start_sent"]
+                and span_source.end_char <= info_target["end_sent"]
             ):
-                dist = self.distance(span_sub, span_obj, method)
+                dist = self.distance(span_source, span_target, method)
                 if dist < conserver["dist"] and dist != 0:
                     conserver["dist"] = dist
-                    conserver["id_sub"] = num_span_sub
-                    conserver["id_obj"] = num_span_obj
-                    conserver["span_sub"] = span_sub
-                    conserver["span_obj"] = span_obj
-        # if opt_dist and "span_obj" in conserver:
-        # max_dist = self.best_max(conserver["span_obj"])
+                    conserver["id_source"] = num_span_source
+                    conserver["id_target"] = num_span_target
+                    conserver["span_source"] = span_source
+                    conserver["span_target"] = span_target
+        # if opt_dist and "span_target" in conserver:
+        # max_dist = self.best_max(conserver["span_target"])
 
         if (
             conserver["dist"] <= max_dist
-            and conserver["id_sub"] is not None
-            and conserver["id_obj"] is not None
+            and conserver["id_source"] is not None
+            and conserver["id_target"] is not None
         ):
             self.corpus[num_doc].spans["Chemical_and_drugs"][
-                conserver["id_sub"]
-            ]._.rel.append({"type": "Depend", "target": conserver["span_obj"]})
+                conserver["id_source"]
+            ]._.rel.append({"type": "Depend", "target": conserver["span_target"]})
 
-            self.corpus[num_doc].spans[label_obj][conserver["id_obj"]]._.rel.append(
-                {"type": "inv_Depend", "target": conserver["span_sub"]}
-            )
+            self.corpus[num_doc].spans[label_target][
+                conserver["id_target"]
+            ]._.rel.append({"type": "inv_Depend", "target": conserver["span_source"]})
 
     """
-    def best_max(self, span_obj: Span) -> int:
+    def best_max(self, span_target: Span) -> int:
         '''Trouve la distance maximale pour laquelle
             une relation de dépendance est possible
 
         Args:
-            span_obj (Span): entité objet
+            span_target (Span): entité target
 
         Returns:
             int: distance maximale
         '''
-        if span_obj.label_ == "Temporal":
+        if span_target.label_ == "Temporal":
             return 27
-        if span_obj.label_ == "Chemical_and_drugs":
-            if span_obj._.Tech == "dosage":
+        if span_target.label_ == "Chemical_and_drugs":
+            if span_target._.Tech == "dosage":
                 return 45
-            if span_obj._.Tech == "form":
+            if span_target._.Tech == "form":
                 return 45
-            if span_obj._.Tech == "route":
+            if span_target._.Tech == "route":
                 return 45
-            if span_obj._.Tech == "strength":
+            if span_target._.Tech == "strength":
                 return 45
         else:
             return 45
     """
 
-    def iterate_over_sub(
+    def iterate_over_source(
         self,
         num_doc: int,
-        num_span_obj: int,
+        num_span_target: int,
         opt_dist: bool,
-        span_obj: Span,
-        label_obj: str,
+        span_target: Span,
+        label_target: str,
         max_dist: int,
         method: str,
     ) -> None:
@@ -217,47 +219,49 @@ class model_proximity:
 
         Args:
             num_doc (int): Numero de document
-            num_span_obj (int): Numero de l'entité objet dans le document
-            span_obj (Span): Entité objet
-            label_obj (str): label de l'entité objet
+            num_span_target (int): Numero de l'entité target dans le document
+            span_target (Span): Entité target
+            label_target (str): label de l'entité target
             max_dist (int): distance maximale pour laquelle une relation
                             de dépendance est possible en char
             method (str): Méthode de calcul de la distance
         """
-        conserver = {"id_obj": None, "id_sub": None, "dist": m.inf}
-        for num_span_sub, span_sub in enumerate(
+        conserver = {"id_target": None, "id_source": None, "dist": m.inf}
+        for num_span_source, span_source in enumerate(
             self.corpus[num_doc].spans["Chemical_and_drugs"]
         ):
-            if span_sub._.Tech is None:
-                dist = self.distance(span_sub, span_obj, method)
+            if span_source._.Tech is None:
+                dist = self.distance(span_source, span_target, method)
                 if dist < conserver["dist"] and dist != 0:
                     conserver["dist"] = dist
-                    conserver["id_sub"] = num_span_sub
-                    conserver["id_obj"] = num_span_obj
-                    conserver["span_sub"] = span_sub
-                    conserver["span_obj"] = span_obj
+                    conserver["id_source"] = num_span_source
+                    conserver["id_target"] = num_span_target
+                    conserver["span_source"] = span_source
+                    conserver["span_target"] = span_target
 
-        # if opt_dist and "span_obj" in conserver:
-        # max_dist = self.best_max(conserver["span_obj"])
+        # if opt_dist and "span_target" in conserver:
+        # max_dist = self.best_max(conserver["span_target"])
         if (
             conserver["dist"] <= max_dist
-            and conserver["id_sub"] is not None
-            and conserver["id_obj"] is not None
+            and conserver["id_source"] is not None
+            and conserver["id_target"] is not None
         ):
             self.corpus[num_doc].spans["Chemical_and_drugs"][
-                conserver["id_sub"]
-            ]._.rel.append({"type": "Depend", "target": conserver["span_obj"]})
+                conserver["id_source"]
+            ]._.rel.append({"type": "Depend", "target": conserver["span_target"]})
 
-            self.corpus[num_doc].spans[label_obj][conserver["id_obj"]]._.rel.append(
-                {"type": "inv_Depend", "target": conserver["span_sub"]}
-            )
+            self.corpus[num_doc].spans[label_target][
+                conserver["id_target"]
+            ]._.rel.append({"type": "inv_Depend", "target": conserver["span_source"]})
 
-    def distance(self, span_sub: Span, span_obj: Span, method: str = "start") -> int:
+    def distance(
+        self, span_source: Span, span_target: Span, method: str = "start"
+    ) -> int:
         """Calcul la distance entre deux spans
 
         Args:
-            span1 (Span): Span objet
-            span2 (Span): Span sujet
+            span1 (Span): Span target
+            span2 (Span): Span source
             method (str, optional): Méthode de calcul de la distance.
                                     Defaults to "start".
 
@@ -265,18 +269,18 @@ class model_proximity:
             int: Distance entre les spans
         """
         if method == "start":
-            return m.fabs(span_obj.start_char - span_sub.start_char)
+            return m.fabs(span_target.start_char - span_source.start_char)
         elif method == "end":
-            return m.fabs(span_obj.end_char - span_sub.end_char)
+            return m.fabs(span_target.end_char - span_source.end_char)
         elif method == "middle":
             return m.fabs(
-                (span_obj.start_char + span_obj.end_char) / 2
-                - (span_sub.start_char + span_sub.end_char) / 2
+                (span_target.start_char + span_target.end_char) / 2
+                - (span_source.start_char + span_source.end_char) / 2
             )
         elif method == "right":
-            return m.fabs(span_obj.start_char - span_sub.end_char)
+            return m.fabs(span_target.start_char - span_source.end_char)
         elif method == "left":
-            return m.fabs(span_obj.end_char - span_sub.start_char)
+            return m.fabs(span_target.end_char - span_source.start_char)
 
     def score(self, corpus_true: List[Doc], corpus_pred: List[Doc]) -> Dict[str, Any]:
         """Score les relations prédites

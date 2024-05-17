@@ -13,7 +13,7 @@ sys.path.insert(0, "/home/pidoux/edsnlp")
 @mark.parametrize(
     "proximity_method", ["sym", "right", "left", "middle", "start", "end"]
 )
-@mark.parametrize("max_dist", [1, 40, 100])
+@mark.parametrize("max_dist", [1, 45, 100])
 def test_relations(use_sentences, clean_rel, proximity_method, max_dist):
     dossier = "../../resources/relations/"
     doc_iterator = edsnlp.data.read_standoff(dossier)
