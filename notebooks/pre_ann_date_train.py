@@ -15,6 +15,7 @@ from RENE.pre_annotation import txt_liste, prepare_brat_train, fusion_ann_train
 sys.path.append("/home/pidoux/LIMICS/EDS-RENE/")
 
 
+
 @registry.adapters.register("ner_adapter")
 def ner_adapter(
     path: DirectoryPath,
